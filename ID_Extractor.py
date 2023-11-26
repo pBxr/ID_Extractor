@@ -3,19 +3,19 @@ import os, sys, sqlite3
 import time
 import platform
 
-from data_base_parent import data_base_class
+from database_parent import databaseClass
 
 
-#---------- Definitions variables and classes -------------------------------------------------
+#---------- Definitions classes -------------------------------------------------
 
 class articleIDsClass:
    
-    def __init__(self, path, fileName, data_base):
+    def __init__(self, path, fileName, database):
 
         self._path = ""
         self._fileName = ""
         self._articleDOI = ""
-        self._articleRecorded = False
+        self._articleRecorded= False
         self._fieldIDs = []
         self._gazetteerIDs = []
         self._objectsIDs = []
@@ -38,38 +38,45 @@ class articleIDsClass:
                 
                 DOIs = self._soup.find_all('article-id')
                 if len(DOIs) <= 0:
-                    print("Caution: \"", fileName, "\" does not contain an article DOI")
+                    message = "Caution: \"" + fileName + "\" does not contain an article DOI"
+                    print(message)
+                    self._log.append(message)
                     self._articleDOI = "NO_DOI"
                 for DOI in DOIs:
                     self._articleDOI = DOI.get_text()
 
             self._path = path
             self._fileName = fileName
-  
+
             #------- Check if a record already exists for this article
  
             if not self._articleDOI == 'NO_DOI':
                     
                 try:
-                    self._articleRecorded = data_base.check_existance(self._articleDOI)
+                    self._articleRecorded = database.check_if_record_exists(self._articleDOI)
                     
                     if self._articleRecorded:
-                        self._log.append("%s %s" % (self._articleDOI, "- This ID exists already in data base \n" \
+                        self._log.append("%s %s" % (self._articleDOI, "- This ID exists already in database \n" \
                                                     "Article skipped."))
 
                     if not self._articleRecorded:
                         self._log.append("%s %s" % (self._articleDOI, " - This article was added " \
-                                                    "to existing data base"))
-                               
+                                                    "to existing database"))
+
                 except:
-                    errorMessage="ERROR: Could not check data base"
-                    print(errorMessage)
-                    self._log.append(errorMessage)
+                    message = "ERROR: Could not check database"
+                    print(message)
+                    self._log.append(message)
                 
             fp.close()
         
         except:
-            print("ERROR: Could not open file, check file name and path")
+            message = "ERROR: Could not open file, check file name and path."
+            print(message)
+            self._log.append(message)
+            write_log(self, database)
+            print("Press enter to quit")
+            input()
             sys.exit(0)
 
     def get_zenonIDs(self):
@@ -81,6 +88,7 @@ class articleIDsClass:
             zenonLink = zenonLinkFull.get('xlink:href')
 
             #-- Get IDs only
+            
             if "https://zenon.dainst.org/Record/" in zenonLink:
                 zenonID = zenonLink[32:]
                 zenonIDs.append(zenonID)
@@ -89,7 +97,6 @@ class articleIDsClass:
     def get_and_separate_others(self):
 
         linkIDs = []
-                
         gazetteerIDs = []
         objectsIDs = []
         fieldIDs = []
@@ -100,8 +107,9 @@ class articleIDsClass:
             links = self._soup.find_all('ext-link', {"specific-use":other})
             for linkID in links:
                 linkIDs.append(linkID.get('xlink:href'))
-            
+ 
             #-- Get IDs only
+
             for ID in linkIDs:
                 if "https://gazetteer.dainst.org/place/" in ID:
                     gazetteerID = ID[35:]
@@ -115,7 +123,8 @@ class articleIDsClass:
                     fieldID = ID[34:]
                     fieldIDs.append(fieldID)    
 
-        #--- Sort lists and demove duplicates
+        #-- Sort lists and demove duplicates
+                    
         self._gazetteerIDs = clean_list(gazetteerIDs)
         
         self._objectsIDs = clean_list(objectsIDs)
@@ -123,8 +132,26 @@ class articleIDsClass:
         self._fieldIDs = clean_list(fieldIDs)
 
 
-#---------- Definitions functions ------------------------------------------------
+#---------- Definitions variables and functions ------------------------------------------------
 
+def check_input(dbCall, database):
+
+    functionDetected = False
+
+    if dbCall == "x" or dbCall == "X":
+        return True
+    
+    for x, y in database._databases.items():
+        
+        if dbCall == (y['dbCall']):
+            functionDetected = True
+        
+    if functionDetected == True:
+        return True
+
+    else:
+        return False
+        
 def clean_list(listIn):
 
     listIn = list(set(listIn))
@@ -132,8 +159,57 @@ def clean_list(listIn):
     listIn.sort()
 
     return listIn
+
+def insert_log_timestamp(log):
+
+    log.write(f"Date: {day:02d}.{month:02d}.{year:4d}\n")
+    log.write(f"Time: {hour:02d}:{minute:02d}:{second:02d}\n")
+    log.write("\n\n")
     
-def write_log(containerArticles, data_base):
+def get_parameter(database):
+
+    onlyQuery = False
+
+    path = os.getcwd()
+
+    if database._dbFromPreviousRunComplete == True:
+        print("Do you wish to continue with a query of the existing db?\n\n" \
+              "Enter \"q\" for query or \"e\" for further extraction of another convolute:")
+        res = input()
+        while not (res =="q" or res =="Q" or res =="e" or res =="E"):
+            print("Input not correct. Please retry.")
+            res = input()
+                    
+        if res == "q" or res =="Q":
+            onlyQuery = True
+
+        if res == "e" or res =="E":
+            onlyQuery = False
+
+    if onlyQuery == False or database._noDbExists == True:
+        print("Please enter the full path of the directory with .xml article files:\n")
+        path = input()
+
+    print("\n")
+
+    print("Choose an export function by entering one of the following abbreviations...\n")
+
+    for x, y in database._databases.items():
+        print(y['dbCall'], " = ", "Export and show the", y['dbDescription'])
+    print("x = no additional export")
+
+    check = False
+
+    while not check == True:
+        print("... here: ")
+        dbCall = input()
+        check = check_input(dbCall, database)
+        if check == False:
+            print("Function does not exists. Please check your input")
+
+    return path, onlyQuery, dbCall
+ 
+def write_log(containerArticles, database):
 
     cwd = os.getcwd()
 
@@ -143,22 +219,30 @@ def write_log(containerArticles, data_base):
             os.makedirs("_ID_Ex_LOG")
 
     if operatingSystem == "Windows":
-            path = cwd+"\\"+"_ID_Ex_LOG"+"\\"
+            logPath = cwd+"\\"+"_ID_Ex_LOG"+"\\"
             
     if operatingSystem == "Linux":
-            path = cwd+'/'+"_ID_Ex_LOG"+'/'
+            logPath = cwd+'/'+"_ID_Ex_LOG"+'/'
 
-    fileName=f"_ID_Extractor_log_{year:4d}-{month:02d}-{day:02d}_{hour:02d}{minute:02d}{second:02d}.txt"
-    
+    fileNameLog=f"01_ID_Extractor_log_{year:4d}-{month:02d}-{day:02d}_{hour:02d}{minute:02d}{second:02d}.txt"
+
+    fileNameExport=f"02_Export_log_{year:4d}-{month:02d}-{day:02d}_{hour:02d}{minute:02d}{second:02d}.txt"
+
+    #-- First the log
+
     try:
-        log = open(path+fileName, "w")
+        log = open(logPath+fileNameLog, "w")
     except:
-        print("ERROR: Could not write log")
+        print("ERROR: Could not write log. Press enter to quit")
+        input()
         sys.exit(0)
 
     log.write("%s %s %s" % ("ID_EXTRACTOR", ID_X_version, "LOG FILE\n\n"))
-    log.write(f"Date: {day:02d}.{month:02d}.{year:4d}\n")
-    log.write(f"Time: {hour:02d}:{minute:02d}:{second:02d}")
+    insert_log_timestamp(log)
+    
+    for dbLog in database._log:
+        log.write(dbLog)
+
     log.write("\n\n")
     
     for containerArticle in containerArticles:
@@ -169,87 +253,115 @@ def write_log(containerArticles, data_base):
             log.write("%s %s" % (entry, "\n"))
         
         log.write("\n")
-    
-    log.close
 
-       
+    log.close()
+
+    #-- Now the db export file
+
+    if len(database._queryResults) > 0:
+
+        try:
+            log = open(logPath+fileNameExport, "w")
+        except:
+            print("ERROR: Could not write export file. Press enter to quit")
+            input()
+            sys.exit(0)
+
+        log.write("%s %s %s" % ("ID_EXTRACTOR", ID_X_version, "EXPORT FILE\n\n"))
+        insert_log_timestamp(log)
+        
+        for queryResult in database._queryResults:
+            log.write(queryResult)
+        
+        log.close()
+
+    
 #----------- Main ----------------------------------------------------------------------
-       
-ID_X_version = "v1.0.0"
+
+#-- Some preconditions       
+
+ID_X_version = "v1.1.0"
+
+operatingSystem = platform.system()
+if operatingSystem == "Darwin":
+    print("ATTENTION: Tool only for WINDOWS or LINUX. Press enter to quit")
+    input()
+    sys.exit(0)
+
 actualTime = time.localtime()
 year, month, day = actualTime[0:3]
 hour, minute, second = actualTime[3:6]
 
-operatingSystem = platform.system()
+dbExists = False
+containerArticles = []
 
-if operatingSystem == "Darwin":
-    print("ATTENTION: Tool only for WINDOWS or LINUX") 
-
-data_base = data_base_class()
-
-print("Welcome to ID_EXTRACTOR", ID_X_version, "\n\nPlease choose a directory by entering the full path:\n")
-
-path = input()
-
-
-#---- Can be switched on for testing purposes
-"""
-if operatingSystem == "Windows":
-    path = "###"
-
-if operatingSystem == "Linux":
-    path = "###"
-"""   
-
-print("You have chosen following path:", path, "\n")
-
-#--- Extract names of all .xml-files
-
-try:
-    files_in_folder = os.scandir(path)
-except:
-    print("ERROR: Problem during opening file. Check file names or path.")
-    quit()
-
-fileNames = list()
-
-for fileName in files_in_folder:
-    if fileName.name.endswith('.xml'):
-        fileNames.append(fileName.name)
-                
-files_in_folder.close()
-
-if len(fileNames) <= 0:
-    print("ERROR: No .xml-file found in the current directory.")
-    quit()
-
-#--- Now run soup and get IDs
-
-containerArticles = list()
-
-for fileName in fileNames:
-    containerArticles.append(articleIDsClass(path, fileName, data_base))
+#-- Start
     
-  
-for articleID in containerArticles:
-    if not articleID._articleRecorded:
-        articleID.get_zenonIDs()
-        articleID.get_and_separate_others()
+print("Welcome to ID_EXTRACTOR", ID_X_version, "\n")
+
+database = databaseClass()  #(Checks during instantiation if db already exists, 
+                            #if no db exists it creates all necessary dbs
+                            #if one of the necessary dbs from a previous run is missing...
+                            #... it returns an exit flag for the following test
+                            
+if database._programExit == True:
+    message = "Please delete databases and restart extraction. \nAPPLICATION TERMINATED."
+    print(message)
+    database._log.append(message)
+    containerArticles = []
+    write_log(containerArticles, database)
+    print("Press enter to quit")
+    input()
+    sys.exit(0)
+
+path, onlyQuery, dbCall = get_parameter(database)
+
+
+#-- Run extraction if requested
+
+if onlyQuery == False:
+
+    try:
+        files_in_folder = os.scandir(path)
+    except:
+        message = "ERROR: Problem during opening file. Check file names or path. Press enter to quit"
+        print(message)
+        input()
+        sys.exit(0)
+
+    fileNames = []
+
+    for fileName in files_in_folder:
+        if fileName.name.endswith('.xml'):
+            fileNames.append(fileName.name)
+                    
+    files_in_folder.close()
+
+    if len(fileNames) <= 0:
+        print("ERROR: No .xml file found in the current directory. Press enter to quit")
+        input()
+        sys.exit(0)
+
+    #--- Now run soup and get IDs
     
-#--- Create log and update data bases
+    for fileName in fileNames: #(DOIs are extracted during instantiation)
+        containerArticles.append(articleIDsClass(path, fileName, database))
+        
+    for articleID in containerArticles:
+        if not articleID._articleRecorded:
+            articleID.get_zenonIDs()
+            articleID.get_and_separate_others()
+      
+    #--- Create db log and update databases
 
-data_base.update(containerArticles)
+    database.update(containerArticles)
 
-#---- Can be switched on for testing purposes - more elaborate functions in the next version...
-#data_base.show_entries("cA")
-#data_base.show_entries("o2p")
-#data_base.show_entries("z2p")
-#data_base.show_entries("g2p")
-#data_base.show_entries("f2p")
 
-write_log(containerArticles, data_base)
+#-- Show and export records if requested
+
+if dbCall != "x":
+    database.show_and_export_records(dbCall)
+
+write_log(containerArticles, database)
 
 print("\nTerminated successfully, see _ID_Extractor_log file")
-
-
-
