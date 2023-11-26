@@ -13,20 +13,26 @@ ID_Ex browses the `.xml` files stored in the article repository folder and extra
 ID_Ex is based on `Python 3.12.0` using `bs4` from `BeautifulSoup` library, so it can be easily modified for own purposes.
 
 ## Mode of operation - and things to be done
-If not existing, ID_Ex generates the required `sqlite3` tables in a subfolder ("db_folder") when starting the tool for the first time. In the initial version of ID_Ex you have to enter the path manually to the repository folder in which the `.jats` files are stored. ID_Ex extracts the data and saves them in mentioned `sqlite3` tables. 
+If not existing, ID_Ex generates the required `sqlite3` tables in a subfolder ("db_folder") when starting the tool for the first time. In the initial version of ID_Ex you have to enter the path to the repository folder in which the `.jats` files are stored manually. ID_Ex extracts the data and saves them in mentioned `sqlite3` tables. 
 To avoid duplicates ID_Ex checks if an article is already recorded using the `doi` and skipps in this case further actions. 
 Additionally ID_Ex generates a detailed `.txt` log file containing the file names and the IDs extracted from them in a subfolder ("_ID_Ex_LOG").
-Using a CronJob for example ID_Ex can be run at certain intervalls to keep the corpus up to date automatically even in the current version.
+With minor modifications ID_Ex can be run at certain intervalls (using a CronJob for example) to keep the corpus up to date automatically.
 
-To be done:
-- Automatical scraping of scattered repositories containing `.jats` article files.
-- Adding step by step features to display the data or to export them as `.json` files or in other formats. 
-At the moment the `sqlite3` tables guarantee a structured access to the data.
+## New in v1.1.0:
+- A menue allows to export the records of a selected table into a `.txt` file in the log subfolder, not only after the extraction process but also in form of a request to a previous generated database
+- Improved handling of the parameters needed for `sqlite3` operations using a `dict` that contains all necessary informations to minimize repetitions
+
+## To be done:
+- Enable automatical scraping of scattered repositories containing `.jats` article files.
+- Adding step by step features to export the records as `.json` files or in other formats.
+- Enable ID_Ex to handle more complex queries and requests
+- Implement a mode of running autonomously to make ID_Ex usable within a CronJob
 
 ## Technical remarks 
 - `Python 3.12.0`
 - `bs4` from `BeautifulSoup`
 - `sqlite3`
+- Tested for Windows (not for Linux yet)
 
 ## See also
 In this context see following repositories for preparing the `.jats` files of the journals mentioned above:
