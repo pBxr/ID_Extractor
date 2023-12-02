@@ -18,6 +18,9 @@ To avoid duplicates ID_Ex checks if an article is already recorded using the `do
 Additionally ID_Ex generates a detailed `.txt` log file containing the file names and the IDs extracted from them in a subfolder ("_ID_Ex_LOG").
 With minor modifications ID_Ex can be run at certain intervalls (using a CronJob for example) to keep the corpus up to date automatically.
 
+## New in v1.1.1:
+- Tables merged to one single database ("ID_Ex_database.db").
+
 ## New in v1.1.0:
 - A menue allows to export the records of a selected table into a `.txt` file in the log subfolder, not only after the extraction process but also in form of a request to a previous generated database
 - Improved handling of the parameters needed for `sqlite3` operations using a `dict` that contains all necessary informations to minimize repetitions
