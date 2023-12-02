@@ -186,7 +186,7 @@ def get_parameter(database):
         if res == "e" or res =="E":
             onlyQuery = False
 
-    if onlyQuery == False or database._noDbExists == True:
+    if onlyQuery == False or database._dbFromPreviousRunComplete == False:
         print("Please enter the full path of the directory with .xml article files:\n")
         path = input()
 
@@ -280,7 +280,7 @@ def write_log(containerArticles, database):
 
 #-- Some preconditions       
 
-ID_X_version = "v1.1.0"
+ID_X_version = "v1.1.1"
 
 operatingSystem = platform.system()
 if operatingSystem == "Darwin":
@@ -303,19 +303,8 @@ database = databaseClass()  #(Checks during instantiation if db already exists,
                             #if no db exists it creates all necessary dbs
                             #if one of the necessary dbs from a previous run is missing...
                             #... it returns an exit flag for the following test
-                            
-if database._programExit == True:
-    message = "Please delete databases and restart extraction. \nAPPLICATION TERMINATED."
-    print(message)
-    database._log.append(message)
-    containerArticles = []
-    write_log(containerArticles, database)
-    print("Press enter to quit")
-    input()
-    sys.exit(0)
 
 path, onlyQuery, dbCall = get_parameter(database)
-
 
 #-- Run extraction if requested
 
@@ -356,7 +345,6 @@ if onlyQuery == False:
 
     database.update(containerArticles)
 
-
 #-- Show and export records if requested
 
 if dbCall != "x":
@@ -365,3 +353,7 @@ if dbCall != "x":
 write_log(containerArticles, database)
 
 print("\nTerminated successfully, see _ID_Extractor_log file")
+print("Press any key to quit")
+input()
+sys.exit(0)
+
