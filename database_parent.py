@@ -5,7 +5,7 @@ class databaseClass:
     
     def __init__(self):
 
-        self._databases = {
+        self.databases = {
             'cA' : {'dbCall' : 'cA', \
                         'dbDescription' : 'articles that have been checked already', \
                         'dbTableName' : 'list_checked_articles', \
@@ -32,15 +32,19 @@ class databaseClass:
 			'dbInit' : 'CREATE TABLE zenon_to_publications(number INTEGER PRIMARY KEY AUTOINCREMENT, zenon_ID TEXT, publications_ID TEXT)'},
             }
 
-        self._cursor = ""
-        self._connection = ""
-        self._path = ""
-        self._dbPath = ""
-        self._log = []
-        self._queryResults = []
-        self._programExit = False
-        self._dbFromPreviousRunComplete = False
-        
+        self.cursor = ""
+        self.connection = ""
+        self.path = ""
+        self.dbPath = ""
+        self.logBuffer = []
+        self.queryResults = []
+        self.programExit = False
+        self.dbFromPreviousRunComplete = False
+
+                
+    def check_if_db_exists(self):
+        self.dbFromPreviousRunComplete = False
+
         operatingSystem = platform.system()
 
         cwd = os.getcwd()
@@ -55,65 +59,70 @@ class databaseClass:
          
         if not dbPathExists:
             message="No db_folder found.\n"
-            print(message)
-            self._log.append(message)
+            self.logBuffer.append(message)
+
             os.makedirs("db_folder")
+
             message="Created db_folder.\n"
-            print(message)
-            self._log.append(message)
+            self.logBuffer.append(message)
 
         else:
             message="Found db_folder.\n\n"
-            print(message)
-            self._log.append(message)
+            self.logBuffer.append(message)
     
         if operatingSystem == "Windows":
-                self._path = cwd+"\\"+"db_folder"+"\\"
+                self.path = cwd+"\\"+"db_folder"+"\\"
         if operatingSystem == "Linux":
-                self._path = cwd+'/'+"db_folder"+'/'
+                self.path = cwd+'/'+"db_folder"+'/'
 
         if dbExists == False:
      
-            self._dbPath = self._path + "ID_Ex_database.db"
+            self.dbPath = self.path + "ID_Ex_database.db"
 
-            if not os.path.exists(self._dbPath):
-                connection = sqlite3.connect(self._dbPath)
+            if not os.path.exists(self.dbPath):
+                connection = sqlite3.connect(self.dbPath)
                 cursor = connection.cursor()
 
                 message = "Created: " + "ID_Ex_database.db" +"\n"
-                print(message)
-                self._log.append(message)
+                self.logBuffer.append(message)
 
-                for x, y in self._databases.items():
+                for x, y in self.databases.items():
                     sql = y['dbInit']
                     cursor.execute(sql)
                     connection.commit()
                     message = "Created Table: " + str(y['dbTableName']) +"\n"
-                    print(message)
-                    self._log.append(message)
+                    self.logBuffer.append(message)
                 
                 connection.close()
 
         else:
-            self._dbPath = self._path + "ID_Ex_database.db"
-            self._dbFromPreviousRunComplete = True
-            message="Found ID_Ex_database.db.\n"
-            print(message)
-            self._log.append(message)
+            self.dbPath = self.path + "ID_Ex_database.db"
+            self.dbFromPreviousRunComplete = True
+            message="Found ID_Ex_database.db.\n\n"
+            self.logBuffer.append(message)
       
     def check_if_record_exists(self, articleDOI):
        
         self.open()
 
         articleExists = False
-           
-        sql = "SELECT publications_ID FROM list_checked_articles WHERE publications_ID = \"" \
-                    + articleDOI + "\""
 
-        self._cursor.execute(sql)
+        try:   
+            sql = "SELECT publications_ID FROM list_checked_articles WHERE publications_ID = \"" \
+                    + articleDOI + "\""
         
-        for cursors in self._cursor:
+            self.cursor.execute(sql)
+        except:
+            errMessage = "\nERROR: Could not check database. Check and restart."
+            self.logBuffer.append(errMessage)
+            tk.messagebox.showwarning(title="ERROR", message = errMessage)
+            
+            self.root.destroy()
+            sys.exit(0)
+            
+        for cursors in self.cursor:
             articleExists = True
+
               
         self.close()
 
@@ -121,32 +130,42 @@ class databaseClass:
     
     def close(self):
         
-        self._connection.commit()
-        self._connection.close()
+        self.connection.commit()
+        self.connection.close()
         
     def open(self):
-
-        self._connection = sqlite3.connect(self._dbPath)
-        self._cursor = self._connection.cursor()
-   
+ 
+        self.connection = sqlite3.connect(self.dbPath)
+        self.cursor = self.connection.cursor()
+    
+    def reset_for_next_run(self):
+        self.logBuffer = []
+        self.queryResults.clear()
+  
     def show_and_export_records(self, chosenDB):
 
         self.open()
 
         #(chosenDB was alread checked in main/check_input, so the passed argument should be valid)
-        for x, y in self._databases.items():
+        for x, y in self.databases.items():
             if y['dbCall'] == chosenDB: 
               toInsert = y['dbTableName']
                   
         sql = "SELECT * FROM" + " " + toInsert    
 
-        self._cursor.execute(sql)
+        try:
+            self.cursor.execute(sql)
+        except:
+            errMessage = "ERROR: Cannot acces database."
+            self.logBuffer.append(errMessage)
+            print(errMessage)   
+            sys.exit(0)
 
-        self._queryResults.append("%s %s %s" %("\nExport from db", toInsert, "\n\n"))
+        self.queryResults.append("%s %s %s" %("\nExport from db", toInsert, "\n\n"))
 
         result = ""
         
-        for res_table in self._cursor:
+        for res_table in self.cursor:
 
             for res in res_table:
                 result = result + str(res) + ", "
@@ -157,42 +176,40 @@ class databaseClass:
             result = result + "\n"            
             queryResult = "%s %s" % (result, "\n")
             
-            self._queryResults.append(queryResult)
+            self.queryResults.append(queryResult)
             result = ""
 
-        for queryResult in self._queryResults:
-            print(queryResult, sep="-")
-
         self.close()
-        
+
+               
     def update(self, containerArticles):
 
         self.open()                  
 
         for containerArticle in containerArticles:
             
-            self._cursor.execute("INSERT OR REPLACE INTO list_checked_articles VALUES(?, ?);", \
-                                        (containerArticle._articleDOI, containerArticle._fileName))
+            self.cursor.execute("INSERT OR REPLACE INTO list_checked_articles VALUES(?, ?);", \
+                                        (containerArticle.articleDOI, containerArticle.fileName))
 
         for containerArticle in containerArticles:
-            for objectsID in containerArticle._objectsIDs:
-                self._cursor.execute("INSERT OR REPLACE INTO objects_to_publications VALUES(NULL, ?, ?);", \
-                                   (objectsID, containerArticle._articleDOI,))
-                containerArticle._log.append("%s %s" %("objectsID extracted:", objectsID))
+            for objectsID in containerArticle.objectsIDs:
+                self.cursor.execute("INSERT OR REPLACE INTO objects_to_publications VALUES(NULL, ?, ?);", \
+                                   (objectsID, containerArticle.articleDOI,))
+                containerArticle.logBuffer.append("%s %s" %("objectsID extracted:", objectsID))
                 
-            for zenonID in containerArticle._zenonIDs:
-                self._cursor.execute("INSERT OR REPLACE INTO zenon_to_publications VALUES(NULL, ?, ?);", \
-                                   (zenonID, containerArticle._articleDOI,))
-                containerArticle._log.append("%s %s" %("zenonID extracted:", zenonID))
+            for zenonID in containerArticle.zenonIDs:
+                self.cursor.execute("INSERT OR REPLACE INTO zenon_to_publications VALUES(NULL, ?, ?);", \
+                                   (zenonID, containerArticle.articleDOI,))
+                containerArticle.logBuffer.append("%s %s" %("zenonID extracted:", zenonID))
             
-            for gazetteerID in containerArticle._gazetteerIDs:
-                self._cursor.execute("INSERT OR REPLACE INTO gazetteer_to_publications VALUES(NULL, ?, ?);", \
-                                   (gazetteerID, containerArticle._articleDOI,))
-                containerArticle._log.append("%s %s" %("gazetteerID extracted:", gazetteerID))
+            for gazetteerID in containerArticle.gazetteerIDs:
+                self.cursor.execute("INSERT OR REPLACE INTO gazetteer_to_publications VALUES(NULL, ?, ?);", \
+                                   (gazetteerID, containerArticle.articleDOI,))
+                containerArticle.logBuffer.append("%s %s" %("gazetteerID extracted:", gazetteerID))
 
-            for fieldID in containerArticle._fieldIDs:
-                self._cursor.execute("INSERT OR REPLACE INTO field_to_publications VALUES(NULL, ?, ?);", \
-                                   (fieldID, containerArticle._articleDOI,))
-                containerArticle._log.append("%s %s" %("fieldID extracted:", fieldID))
+            for fieldID in containerArticle.fieldIDs:
+                self.cursor.execute("INSERT OR REPLACE INTO field_to_publications VALUES(NULL, ?, ?);", \
+                                   (fieldID, containerArticle.articleDOI,))
+                containerArticle.logBuffer.append("%s %s" %("fieldID extracted:", fieldID))
         
         self.close()   
