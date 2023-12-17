@@ -18,7 +18,9 @@ To avoid duplicates ID_Ex checks if an article is already recorded using the `do
 Additionally ID_Ex generates a detailed `.txt` log file containing the file names and the IDs extracted from them in a subfolder ("_ID_Ex_LOG").
 With minor modifications ID_Ex can be run at certain intervalls (using a CronJob for example) to keep the corpus up to date automatically.
 
-## New in v1.1.1:
+## New in v.1.2.0
+- Added a GUI to use the application more comfortably
+- Improved log-handling for multiple runs
 - Tables merged to one single database ("ID_Ex_database.db").
 
 ## New in v1.1.0:
@@ -30,6 +32,7 @@ With minor modifications ID_Ex can be run at certain intervalls (using a CronJob
 - Adding step by step features to export the records as `.json` files or in other formats.
 - Enable ID_Ex to handle more complex queries and requests
 - Implement a mode of running autonomously to make ID_Ex usable within a CronJob
+- Improvements of the GUI, especially exception handling
 
 ## Technical remarks 
 - `Python 3.12.0`
