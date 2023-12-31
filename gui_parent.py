@@ -30,12 +30,11 @@ class guiClass:
         self.inputString = tk.StringVar(self.root)
         self.path = ""
         self.rowNumber = 0
-
-        
+ 
         welcomeMessage = tk.StringVar(self.root)
         welcomeMessageString = "Welcome to ID_EXTRACTOR " + logParameters.ID_X_version + "\n"
         welcomeMessage.set(welcomeMessageString)
-        
+       
         ttk.Label(self.root, textvariable = welcomeMessage, style="TLabel").\
                 grid(column=0,row = self.rowNumber, sticky ='w', **self.paddings)
    
@@ -69,7 +68,7 @@ class guiClass:
                                                 sticky ='w', **self.paddings)   
         
         ttk.Button(self.root, text = "Exit application", style = "TButton",
-                   command=lambda: self.exit_application()).grid(column=1,
+                   command=lambda: self.exit_application(database, containerArticles, logParameters)).grid(column=1,
                                                 row = self.rowNumber + 1,
                                                 sticky ='e', **self.paddings)
         
@@ -80,9 +79,17 @@ class guiClass:
         self.rowNumber = 1
 
         database.check_if_db_exists()
-       
+
+        database.actualize_nr_of_entries()
+
+        infoMessage = "Found ID_Ex_database.db with " + str(database.dbSize) + " entries. Do you wish to run another extraction?"
+
+        message = "database.db has " + str(database.dbSize) + " entries. \n\n"
+        database.logBuffer.append(message)
+        
         if database.dbFromPreviousRunComplete == True:
-            ttk.Label(self.root, text="Found ID_Ex_database.db. Do you wish to run another extraction?", style="TLabel").\
+
+            ttk.Label(self.root, text=infoMessage, style="TLabel").\
                 grid(column=0,row = self.rowNumber, sticky ='w', **self.paddings)
 
             self.chooseExtraction = tk.StringVar(self.root)
@@ -106,11 +113,14 @@ class guiClass:
             grid(column=1, row = self.rowNumber, sticky ='w', **self.paddings)
         self.rowNumber += 1
 
-    def exit_application(self):
+    def exit_application(self, database, containerArticles, logParameters):
         
         res = messagebox.askokcancel(title="Exit application", message="Exit application?")
         
         if res == True:
+            
+            self.write_log(database, containerArticles, logParameters)
+            
             self.root.destroy()    
 
     def run_extraction(self, database, containerArticles, extraction, logParameters):
@@ -158,7 +168,6 @@ class guiClass:
                     articleID.get_and_separate_others()
               
             #-- Create db log and update databases
-
             database.update(containerArticles)
          
     def start_process(self, selectedExports, database, containerArticles, logParameters):
