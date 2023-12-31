@@ -182,7 +182,7 @@ class databaseClass:
             print(errMessage)   
             sys.exit(0)
 
-        self.queryResults.append("%s %s %s" %("\nExport from db", toInsert, "\n\n"))
+        self.queryResults.append(f"\nExport from db {toInsert}\n\n")
 
         result = ""
         
@@ -195,7 +195,7 @@ class databaseClass:
                 result = result[:-2] #cut off the final comma for a clean list
 
             result = result + "\n"            
-            queryResult = "%s %s" % (result, "\n")
+            queryResult = f"{result}\n"
             
             self.queryResults.append(queryResult)
             result = ""
@@ -216,22 +216,22 @@ class databaseClass:
             for objectsID in containerArticle.objectsIDs:
                 self.cursor.execute("INSERT OR REPLACE INTO objects_to_publications VALUES(NULL, ?, ?);", \
                                    (objectsID, containerArticle.articleDOI,))
-                containerArticle.logBuffer.append("%s %s" %("objectsID extracted:", objectsID))
+                containerArticle.logBuffer.append(f"objectsID extracted: {objectsID}")
                 
             for zenonID in containerArticle.zenonIDs:
                 self.cursor.execute("INSERT OR REPLACE INTO zenon_to_publications VALUES(NULL, ?, ?);", \
                                    (zenonID, containerArticle.articleDOI,))
-                containerArticle.logBuffer.append("%s %s" %("zenonID extracted:", zenonID))
+                containerArticle.logBuffer.append(f"zenonID extracted: {zenonID}")
             
             for gazetteerID in containerArticle.gazetteerIDs:
                 self.cursor.execute("INSERT OR REPLACE INTO gazetteer_to_publications VALUES(NULL, ?, ?);", \
                                    (gazetteerID, containerArticle.articleDOI,))
-                containerArticle.logBuffer.append("%s %s" %("gazetteerID extracted:", gazetteerID))
+                containerArticle.logBuffer.append(f"gazetteerID extracted: {gazetteerID}")
 
             for fieldID in containerArticle.fieldIDs:
                 self.cursor.execute("INSERT OR REPLACE INTO field_to_publications VALUES(NULL, ?, ?);", \
                                    (fieldID, containerArticle.articleDOI,))
-                containerArticle.logBuffer.append("%s %s" %("fieldID extracted:", fieldID))
+                containerArticle.logBuffer.append(f"fieldID extracted: {fieldID}")
         
         self.close()
 

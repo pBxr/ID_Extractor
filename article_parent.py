@@ -58,12 +58,12 @@ class articleIDsClass:
                     self.articleRecorded = database.check_if_record_exists(self.articleDOI)
                     
                     if self.articleRecorded:
-                        self.logBuffer.append("%s %s" % (self.articleDOI, "- This ID exists already in database \n" \
-                                                    "Article skipped."))
+                        self.logBuffer.append(f"{self.articleDOI} - This ID exists already in database \n" \
+                                                    "Article skipped.")
 
                     if not self.articleRecorded:
-                        self.logBuffer.append("%s %s" % (self.articleDOI, " - This article was added " \
-                                                    "to existing database"))
+                        self.logBuffer.append(f"{self.articleDOI} - This article was added " \
+                                                    "to existing database")
 
                 except:
                     message = "ERROR: Could not check database"
