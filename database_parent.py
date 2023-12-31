@@ -36,12 +36,32 @@ class databaseClass:
         self.connection = ""
         self.path = ""
         self.dbPath = ""
+        self.dbSize = ""
         self.logBuffer = []
         self.queryResults = []
         self.programExit = False
         self.dbFromPreviousRunComplete = False
 
-                
+    def actualize_nr_of_entries(self):
+
+            self.open()
+
+            sql = "SELECT COUNT(*) FROM list_checked_articles"
+
+            try:
+                self.cursor.execute(sql)
+            except:
+                errMessage = "ERROR: Cannot acces database."
+                self.logBuffer.append(errMessage)
+                print(errMessage)   
+                sys.exit(0)
+
+            for res_table in self.cursor:
+                for res in res_table:
+                    self.dbSize = res
+
+            self.close()
+ 
     def check_if_db_exists(self):
         self.dbFromPreviousRunComplete = False
 
@@ -100,7 +120,7 @@ class databaseClass:
             self.dbFromPreviousRunComplete = True
             message="Found ID_Ex_database.db.\n\n"
             self.logBuffer.append(message)
-      
+
     def check_if_record_exists(self, articleDOI):
        
         self.open()
@@ -142,6 +162,7 @@ class databaseClass:
         self.logBuffer = []
         self.queryResults.clear()
   
+    
     def show_and_export_records(self, chosenDB):
 
         self.open()
@@ -212,4 +233,7 @@ class databaseClass:
                                    (fieldID, containerArticle.articleDOI,))
                 containerArticle.logBuffer.append("%s %s" %("fieldID extracted:", fieldID))
         
-        self.close()   
+        self.close()
+
+        self.actualize_nr_of_entries()
+        

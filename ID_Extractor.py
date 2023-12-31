@@ -22,5 +22,5 @@ if __name__=='__main__':
     database = databaseClass()   
  
     window = guiClass(database, containerArticles, logParameters)
-    
+        
     sys.exit(0)
