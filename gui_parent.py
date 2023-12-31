@@ -257,7 +257,7 @@ class guiClass:
             input()
             sys.exit(0)
 
-        log.write("%s %s %s" % ("ID_EXTRACTOR", logParameters.ID_X_version, "LOG FILE\n\n"))
+        log.write(f"ID_EXTRACTOR {logParameters.ID_X_version} LOG FILE\n\n")
         logParameters.insert_log_timestamp(log)
 
         for dbLog in database.logBuffer:
@@ -266,11 +266,10 @@ class guiClass:
         log.write("\n\n")
         
         for containerArticle in containerArticles:
-            log.write("%s %s %s" % ("Path of extracted repository:", containerArticle.path, "\n"))
-            log.write("%s %s %s %s %s" % ("File name:", containerArticle.fileName, "with",
-                                          containerArticle.articleDOI, "\n"))
+            log.write(f"Path of extracted repository: {containerArticle.path}\n")
+            log.write(f"File name: {containerArticle.fileName} with {containerArticle.articleDOI}\n")
             for entry in containerArticle.logBuffer:
-                log.write("%s %s" % (entry, "\n"))
+                log.write(f"{entry}\n")
             
             log.write("\n")
 
@@ -285,7 +284,7 @@ class guiClass:
                 input()
                 sys.exit(0)
 
-            log.write("%s %s %s" % ("ID_EXTRACTOR", logParameters.ID_X_version, "EXPORT FILE\n\n"))
+            log.write(f"ID_EXTRACTOR {logParameters.ID_X_version} EXPORT FILE\n\n")
             logParameters.insert_log_timestamp(log)
             
             for queryResult in database.queryResults:
